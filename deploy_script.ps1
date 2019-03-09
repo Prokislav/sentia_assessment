@@ -43,11 +43,11 @@ Function SelectSubscription {
 
 # register resource types
 Function RegisterResourceTypes {
-  $resourceTypes = @("microsoft.compute","microsoft.network","microsoft.storage"');
+  $resourceTypes = @("microsoft.compute","microsoft.network","microsoft.storage");
   if($resourceTypes.length) {
     Write-Host "Registering resource types"
     foreach($resourceType in $resourceTypes) {
-      Write-Host "Registering resource type '$resourceType;
+      Write-Host "Registering resource type '$resourceType'";
       Register-AzureRmResourceProvider -ProviderNamespace $resourceType;
     }
   }
@@ -76,26 +76,28 @@ Function CreateResourceGroupTags {
   Set-AzureRmResourceGroup -Name $resourceGroupName -Tag $Tags;
 }
 
-# assign policy definition to subscription and resource group
-Function AssignPolicy {
-  Write-Host "Registering policy definition and assigning to '$resourceGroupName'";
-  New-AzureRmPolicyDefinition -Name myPolicy1 -Policy $policyFilePath;
-  New-AzureRmPolicyAssignment -Name myPol1 -PolicyDefinition (Get-AzureRmPolicyDefinition -Name myPolicy1) -Scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroupName;
-}
-
 # deploy
 Function Deploy {
   Write-Host "Deploying...";
   if(Test-Path $parametersFilePath) {
-    New-AzureRmResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath -TemplateParameterFile $parametersFilePath;
+    New-AzureRmResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath -TemplateParameterFile $parametersFilePath;
   } else {
-    New-AzureRmResourceGroupDeployment -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath;
+    New-AzureRmResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile $templateFilePath;
   }
+}
+
+# assign policy definition to subscription and resource group
+Function AssignPolicy {
+  Write-Host "Registering policy definition and assigning to '$resourceGroupName'";
+  New-AzureRmPolicyDefinition -Name policyDefinition -Policy $policyFilePath;
+  New-AzureRmPolicyAssignment -Name policyAssignment -PolicyDefinition (Get-AzureRmPolicyDefinition -Name policyDefinition) -Scope /subscriptions/$subscriptionId/resourceGroups/$resourceGroupName;
 }
 
 #******
 # Body
 #******
+
+Import-Module AzureRM
 
 $ErrorActionPreference = "Stop"
 
@@ -104,5 +106,5 @@ SelectSubscription;
 RegisterResourceTypes;
 CreateResourceGroup;
 CreateResourceGroupTags;
-AssignPolicy;
 Deploy;
+AssignPolicy;
